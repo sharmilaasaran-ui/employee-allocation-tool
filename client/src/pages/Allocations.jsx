@@ -238,18 +238,18 @@ const Allocations = () => {
                                                 <Briefcase className="w-5 h-5" />
                                             </div>
                                             <div>
-                                                <p className="font-medium text-gray-900">{alloc.task_name}</p>
-                                                <p className="text-sm text-gray-500">{alloc.project_name}</p>
+                                                <div className="font-medium text-gray-900">{alloc.project_name}</div>
+                                                <div className="text-sm text-gray-500">{alloc.task_name}</div>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-6">
-                                            <div className="flex items-center gap-2 text-gray-600">
+                                            <div className="flex items-center gap-2 text-sm text-gray-600">
                                                 <Clock className="w-4 h-4" />
-                                                <span>{alloc.allocated_hours}h</span>
+                                                {alloc.allocated_hours}h
                                             </div>
-                                            <div className="flex items-center gap-2 text-gray-600">
+                                            <div className="flex items-center gap-2 text-sm text-gray-600">
                                                 <Calendar className="w-4 h-4" />
-                                                <span>{alloc.date}</span>
+                                                {alloc.date}
                                             </div>
                                             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <button
@@ -270,8 +270,8 @@ const Allocations = () => {
                                 ))}
                             </div>
                         ) : (
-                            <div className="p-8 text-center text-gray-400">
-                                No tasks assigned yet.
+                            <div className="p-8 text-center text-gray-500">
+                                No tasks assigned yet
                             </div>
                         )}
                     </div>

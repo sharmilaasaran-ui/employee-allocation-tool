@@ -47,11 +47,20 @@ async function initDatabase() {
         task_id INTEGER NOT NULL,
         allocated_hours REAL NOT NULL,
         date TEXT NOT NULL,
+        status TEXT DEFAULT 'Not Yet Started',
         FOREIGN KEY (employee_id) REFERENCES employees (id),
         FOREIGN KEY (project_id) REFERENCES projects (id),
         FOREIGN KEY (task_id) REFERENCES tasks (id)
       )
     `);
+
+    // Migration: Add status column if it doesn't exist (for existing databases)
+    try {
+      await client.query(`ALTER TABLE allocations ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'Not Yet Started'`);
+    } catch (e) {
+      // Ignore error if column exists (though IF NOT EXISTS handles it in newer Postgres, safety check)
+      console.log('Status column migration check completed.');
+    }
 
     // Time Logs table
     await client.query(`

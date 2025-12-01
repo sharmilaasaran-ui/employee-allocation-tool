@@ -129,6 +129,30 @@ app.post('/api/projects', async (req, res) => {
     }
 });
 
+app.put('/api/projects/:id', async (req, res) => {
+    const { id } = req.params;
+    const { name } = req.body;
+    try {
+        await pool.query(
+            'UPDATE projects SET name = $1 WHERE id = $2',
+            [name, id]
+        );
+        res.json({ id, name });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.delete('/api/projects/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        await pool.query('DELETE FROM projects WHERE id = $1', [id]);
+        res.json({ message: 'Deleted' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Tasks
 app.get('/api/tasks', async (req, res) => {
     const { project_id } = req.query;
@@ -178,11 +202,11 @@ app.get('/api/allocations', async (req, res) => {
 });
 
 app.post('/api/allocations', async (req, res) => {
-    const { employee_id, project_id, task_id, allocated_hours, date } = req.body;
+    const { employee_id, project_id, task_id, allocated_hours, date, status } = req.body;
     try {
         const result = await pool.query(
-            'INSERT INTO allocations (employee_id, project_id, task_id, allocated_hours, date) VALUES ($1, $2, $3, $4, $5) RETURNING id',
-            [employee_id, project_id, task_id, allocated_hours, date]
+            'INSERT INTO allocations (employee_id, project_id, task_id, allocated_hours, date, status) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
+            [employee_id, project_id, task_id, allocated_hours, date, status || 'Not Yet Started']
         );
         res.json({ id: result.rows[0].id, ...req.body });
     } catch (err) {
@@ -192,11 +216,11 @@ app.post('/api/allocations', async (req, res) => {
 
 app.put('/api/allocations/:id', async (req, res) => {
     const { id } = req.params;
-    const { employee_id, project_id, task_id, allocated_hours, date } = req.body;
+    const { employee_id, project_id, task_id, allocated_hours, date, status } = req.body;
     try {
         await pool.query(
-            'UPDATE allocations SET employee_id = $1, project_id = $2, task_id = $3, allocated_hours = $4, date = $5 WHERE id = $6',
-            [employee_id, project_id, task_id, allocated_hours, date, id]
+            'UPDATE allocations SET employee_id = $1, project_id = $2, task_id = $3, allocated_hours = $4, date = $5, status = $6 WHERE id = $7',
+            [employee_id, project_id, task_id, allocated_hours, date, status, id]
         );
         res.json({ id, ...req.body });
     } catch (err) {
