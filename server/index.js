@@ -11,7 +11,14 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // Initialize Database
-initDatabase();
+(async () => {
+    try {
+        await initDatabase();
+    } catch (err) {
+        console.error('Failed to initialize database:', err);
+        process.exit(1);
+    }
+})();
 
 // Create default admin
 const createDefaultAdmin = async () => {

@@ -9,8 +9,9 @@ const pool = new Pool({
 });
 
 async function initDatabase() {
-  const client = await pool.connect();
+  let client;
   try {
+    client = await pool.connect();
     // Employees table
     await client.query(`
       CREATE TABLE IF NOT EXISTS employees (
@@ -100,7 +101,9 @@ async function initDatabase() {
   } catch (err) {
     console.error('Error initializing database:', err);
   } finally {
-    client.release();
+    if (client) {
+      client.release();
+    }
   }
 }
 
