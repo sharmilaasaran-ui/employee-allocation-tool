@@ -16,7 +16,9 @@ async function initDatabase() {
       CREATE TABLE IF NOT EXISTS employees (
         id SERIAL PRIMARY KEY,
         name TEXT NOT NULL,
-        hourly_rate REAL NOT NULL DEFAULT 0
+        hourly_rate REAL NOT NULL DEFAULT 0,
+        email TEXT UNIQUE,
+        password TEXT
       )
     `);
 
@@ -58,8 +60,15 @@ async function initDatabase() {
     try {
       await client.query(`ALTER TABLE allocations ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'Not Yet Started'`);
     } catch (e) {
-      // Ignore error if column exists (though IF NOT EXISTS handles it in newer Postgres, safety check)
       console.log('Status column migration check completed.');
+    }
+
+    // Migration: Add email and password columns to employees if they don't exist
+    try {
+      await client.query(`ALTER TABLE employees ADD COLUMN IF NOT EXISTS email TEXT UNIQUE`);
+      await client.query(`ALTER TABLE employees ADD COLUMN IF NOT EXISTS password TEXT`);
+    } catch (e) {
+      console.log('Employee columns migration check completed.');
     }
 
     // Time Logs table

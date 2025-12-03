@@ -36,23 +36,33 @@ app.post('/api/login', async (req, res) => {
     console.log(`Login attempt for: ${email}`);
 
     try {
-        const result = await pool.query('SELECT * FROM admins WHERE email = $1', [email]);
-        const admin = result.rows[0];
+        // Check Admin
+        const adminResult = await pool.query('SELECT * FROM admins WHERE email = $1', [email]);
+        const admin = adminResult.rows[0];
 
-        if (!admin) {
-            console.log('User not found');
-            return res.status(401).json({ error: 'Invalid credentials' });
+        if (admin) {
+            const validPassword = bcrypt.compareSync(password, admin.password);
+            if (validPassword) {
+                console.log('Admin login successful');
+                return res.json({ id: admin.id, email: admin.email, name: 'Admin', role: 'admin' });
+            }
         }
 
-        console.log('User found, verifying password...');
-        const validPassword = bcrypt.compareSync(password, admin.password);
-        if (!validPassword) {
-            console.log('Invalid password');
-            return res.status(401).json({ error: 'Invalid credentials' });
+        // Check Employee
+        const empResult = await pool.query('SELECT * FROM employees WHERE email = $1', [email]);
+        const employee = empResult.rows[0];
+
+        if (employee) {
+            const validPassword = bcrypt.compareSync(password, employee.password);
+            if (validPassword) {
+                console.log('Employee login successful');
+                return res.json({ id: employee.id, email: employee.email, name: employee.name, role: 'employee' });
+            }
         }
 
-        console.log('Login successful');
-        res.json({ id: admin.id, email: admin.email, name: 'Admin' });
+        console.log('Invalid credentials');
+        res.status(401).json({ error: 'Invalid credentials' });
+
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Internal server error' });
@@ -70,13 +80,14 @@ app.get('/api/employees', async (req, res) => {
 });
 
 app.post('/api/employees', async (req, res) => {
-    const { name, hourly_rate } = req.body;
+    const { name, hourly_rate, email, password } = req.body;
     try {
+        const hashedPassword = password ? bcrypt.hashSync(password, 10) : null;
         const result = await pool.query(
-            'INSERT INTO employees (name, hourly_rate) VALUES ($1, $2) RETURNING id',
-            [name, hourly_rate]
+            'INSERT INTO employees (name, hourly_rate, email, password) VALUES ($1, $2, $3, $4) RETURNING id',
+            [name, hourly_rate, email, hashedPassword]
         );
-        res.json({ id: result.rows[0].id, name, hourly_rate });
+        res.json({ id: result.rows[0].id, name, hourly_rate, email });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -84,13 +95,22 @@ app.post('/api/employees', async (req, res) => {
 
 app.put('/api/employees/:id', async (req, res) => {
     const { id } = req.params;
-    const { name, hourly_rate } = req.body;
+    const { name, hourly_rate, email, password } = req.body;
     try {
-        await pool.query(
-            'UPDATE employees SET name = $1, hourly_rate = $2 WHERE id = $3',
-            [name, hourly_rate, id]
-        );
-        res.json({ id, name, hourly_rate });
+        let query = 'UPDATE employees SET name = $1, hourly_rate = $2, email = $3';
+        let params = [name, hourly_rate, email];
+
+        if (password) {
+            const hashedPassword = bcrypt.hashSync(password, 10);
+            query += ', password = $4 WHERE id = $5';
+            params.push(hashedPassword, id);
+        } else {
+            query += ' WHERE id = $4';
+            params.push(id);
+        }
+
+        await pool.query(query, params);
+        res.json({ id, name, hourly_rate, email });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
